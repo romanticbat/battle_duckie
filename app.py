@@ -147,10 +147,10 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
     real_pokemon2_name = get_real_pokemon_name(pokemon2)
 
     draw.text((5, 210), f"{real_pokemon1_name.capitalize()}", fill=(255, 255, 255), font=font)
-    draw.text((193, 210), f"{pokemon1_level}", fill=(255, 255, 255), font=font)
+    draw.text((194, 214), f"{pokemon1_level}", fill=(255, 255, 255), font=font)
 
     draw.text((835, 210), f"{real_pokemon2_name.capitalize()}", fill=(255, 255, 255), font=font)
-    draw.text((770, 210), f"{pokemon2_level}", fill=(255, 255, 255), font=font)
+    draw.text((770, 214), f"{pokemon2_level}", fill=(255, 255, 255), font=font)
 
     output = BytesIO()
     battle_image.save(output, format='PNG')
@@ -163,7 +163,7 @@ def battle():
     pokemon2 = request.args.get('pokemon2')
     sprite_height = int(request.args.get('sprite_height', 96))
     hp_bar_scale = float(request.args.get('hp_bar_scale', 1.5))
-    font_scale = float(request.args.get('font_scale', 5.1))
+    font_scale = float(request.args.get('font_scale', 4.5))
 
     if not pokemon1 or not pokemon2:
         return "Please provide both pokemon1 and pokemon2 parameters.", 400
