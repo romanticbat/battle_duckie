@@ -25,17 +25,15 @@ def get_background_image():
         return Image.new('RGBA', (960, 480), (255, 255, 255, 255)) 
 
 def get_pokemon_sprite(pokemon_name, is_pokemon1=False, shiny=False, target_height=96):
-    """Fetch the sprite image of a Pokémon from the PokéAPI."""
+    """Busca o sprite do Pokémon."""
     url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name.lower()}"
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
-        
-        # Se for Pokémon 1, usar sempre o sprite de costas ('back_default' ou 'back_shiny')
+
         if is_pokemon1:
             sprite_key = 'back_shiny' if shiny else 'back_default'
         else:
-            # Para Pokémon 2, usar o sprite de frente ('front_shiny' ou 'front_default')
             sprite_key = 'front_shiny' if shiny else 'front_default'
 
         if 'sprites' in data and sprite_key in data['sprites']:
@@ -48,8 +46,21 @@ def get_pokemon_sprite(pokemon_name, is_pokemon1=False, shiny=False, target_heig
                     return sprite
     return None
 
+def get_real_pokemon_name(pokemon_identifier):
+    """Se for número, busca o nome real na API. Se for texto, usa direto."""
+    if str(pokemon_identifier).isdigit():
+        url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_identifier}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            return data['name']
+        else:
+            return str(pokemon_identifier)
+    else:
+        return str(pokemon_identifier)
+
 def resize_image(image, target_height=96):
-    """Resize an image while maintaining aspect ratio."""
+    """Redimensiona a imagem mantendo proporção."""
     ratio = target_height / float(image.size[1])
     width = int(float(image.size[0]) * ratio)
     image = image.resize((width, target_height), Image.BICUBIC)
@@ -58,15 +69,15 @@ def resize_image(image, target_height=96):
 def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, font_scale=5.0):
     shiny1 = request.args.get('shiny1', 'false').lower() == 'true'
     shiny2 = request.args.get('shiny2', 'false').lower() == 'true'
-    
-    # Para Pokémon 1, `is_pokemon1=True` para garantir o uso do sprite de costas
+
+    # pega sprites
     sprite1 = get_pokemon_sprite(pokemon1, is_pokemon1=True, shiny=shiny1, target_height=sprite_height * 2)
     sprite2 = get_pokemon_sprite(pokemon2, is_pokemon1=False, shiny=shiny2, target_height=sprite_height * 2)
 
     if sprite1 is None or sprite2 is None:
         return None
 
-    background = get_background_image() 
+    background = get_background_image()
     background = resize_image(background, target_height=480)
     battle_image = Image.new('RGBA', background.size, (255, 255, 255, 0))
     battle_image.paste(background, (0, 0))
@@ -101,7 +112,7 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
     if ema_image:
         battle_image.paste(ema_image, (0, 15), ema_image)
 
-    # Efeito local para Pokémon 2
+    # Efeitos locais
     battle_effect_pokemon2_name = request.args.get('battle_effect_pokemon2')
     if battle_effect_pokemon2_name:
         effect_path = os.path.join("images", f"{battle_effect_pokemon2_name}.png")
@@ -112,7 +123,6 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
             except Exception as e:
                 print(f"Erro ao carregar efeito do Pokémon 2: {e}")
 
-    # Efeito local da batalha
     battle_effect_battle_name = request.args.get('battle_effect_battle')
     if battle_effect_battle_name:
         effect_path = os.path.join("images", f"{battle_effect_battle_name}.png")
@@ -123,6 +133,7 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
             except Exception as e:
                 print(f"Erro ao carregar efeito da batalha: {e}")
 
+    # Nome e level dos pokémons
     font_size = int(2.2 * font_scale)
     try:
         font = ImageFont.truetype("pokemonfont.ttf", font_size)
@@ -130,13 +141,15 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
         font = ImageFont.load_default()
 
     pokemon1_level = request.args.get('level1', '1')
-    pokemon1_name = pokemon1.split('-')[0]
-    draw.text((5, 210), f"{pokemon1_name.capitalize()}", fill=(255, 255, 255), font=font)
+    pokemon2_level = request.args.get('level2', '1')
+
+    real_pokemon1_name = get_real_pokemon_name(pokemon1)
+    real_pokemon2_name = get_real_pokemon_name(pokemon2)
+
+    draw.text((5, 210), f"{real_pokemon1_name.capitalize()}", fill=(255, 255, 255), font=font)
     draw.text((193, 210), f"{pokemon1_level}", fill=(255, 255, 255), font=font)
 
-    pokemon2_level = request.args.get('level2', '1')
-    pokemon2_name = pokemon2.split('-')[0]
-    draw.text((835, 210), f"{pokemon2_name.capitalize()}", fill=(255, 255, 255), font=font)
+    draw.text((835, 210), f"{real_pokemon2_name.capitalize()}", fill=(255, 255, 255), font=font)
     draw.text((770, 210), f"{pokemon2_level}", fill=(255, 255, 255), font=font)
 
     output = BytesIO()
