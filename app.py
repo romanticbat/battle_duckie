@@ -1,7 +1,11 @@
 from flask import Flask, send_file, request
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
+
 import os
+import requests
+import threading
+import time
 import requests
 
 app = Flask(__name__)
@@ -176,3 +180,17 @@ def battle():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+def auto_ping():
+    url = "https://hiru-battlepai.onrender.comhttps://hiru-battlepai.onrender.com/battle?pokemon1=1&pokemon2=4&hp1=100&hp2=100&level1=10&level2=10&battle_effect_pokemon2=&battle_effect_battle=&shiny1=false&shiny2=false"
+    while True:
+        try:
+            response = requests.get(url)
+            now = time.strftime("%d/%m/%Y %H:%M:%S")
+            print(f"[{now}] Ping enviado! Status code: {response.status_code}")
+        except Exception as e:
+            print(f"Erro ao enviar ping: {e}")
+        time.sleep(300)  # 5 minutos
+
+# Inicia a thread de auto-ping
+threading.Thread(target=auto_ping, daemon=True).start()
