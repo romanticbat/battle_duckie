@@ -127,6 +127,17 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
             except Exception as e:
                 print(f"Erro ao carregar efeito do Pokémon 2: {e}")
 
+    # Efeitos locais
+    battle_effect_pokemon1_name = request.args.get('battle_effect_pokemon1')
+    if battle_effect_pokemon1_name:
+        effect_path = os.path.join("images", f"{battle_effect_pokemon1_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                battle_effect_pokemon1 = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(battle_effect_pokemon1, (5, 198), battle_effect_pokemon1)
+            except Exception as e:
+                print(f"Erro ao carregar efeito do Pokémon 1: {e}")
+
     battle_effect_battle_name = request.args.get('battle_effect_battle')
     if battle_effect_battle_name:
         effect_path = os.path.join("images", f"{battle_effect_battle_name}.png")
@@ -182,7 +193,7 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
 
 def auto_ping():
-    url = "https://hiru-battlepai.onrender.comhttps://hiru-battlepai.onrender.com/battle?pokemon1=1&pokemon2=4&hp1=100&hp2=100&level1=10&level2=10&battle_effect_pokemon2=&battle_effect_battle=&shiny1=false&shiny2=false"
+    url = "https://hiru-battlepai.onrender.com/battle?pokemon1=4&pokemon2=1&hp1=80&hp2=65&level1=100&level2=100&shiny1=true&shiny2=true&battle_effect_pokemon1=&battle_effect_pokemon2=&battle_effect_battle="
     while True:
         try:
             response = requests.get(url)
