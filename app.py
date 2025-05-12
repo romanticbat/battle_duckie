@@ -146,7 +146,67 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
                 battle_effect_battle = Image.open(effect_path).convert("RGBA")
                 battle_image.paste(battle_effect_battle, (65, 25), battle_effect_battle)
             except Exception as e:
-                print(f"Erro ao carregar efeito da batalha: {e}")
+                print(f"Erro ao carregar efeito da batalha: {e}")           
+
+    pokeball1_icon_name = request.args.get('pokeball1')
+    if pokeball1_icon_name:
+        effect_path = os.path.join("images", f"{pokeball1_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball1_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball1_icon_name, (65, 245), pokeball1_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 1: {e}")
+
+    pokeball2_icon_name = request.args.get('pokeball2')
+    if pokeball2_icon_name:
+        effect_path = os.path.join("images", f"{pokeball2_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball2_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball2_icon_name, (84, 245), pokeball2_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 2: {e}")
+
+    pokeball3_icon_name = request.args.get('pokeball3')
+    if pokeball3_icon_name:
+        effect_path = os.path.join("images", f"{pokeball3_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball3_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball3_icon_name, (103, 245), pokeball3_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 3: {e}")
+
+    pokeball4_icon_name = request.args.get('pokeball4')
+    if pokeball4_icon_name:
+        effect_path = os.path.join("images", f"{pokeball4_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball4_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball4_icon_name, (836, 245), pokeball4_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 4: {e}")
+
+    pokeball5_icon_name = request.args.get('pokeball5')
+    if pokeball5_icon_name:
+        effect_path = os.path.join("images", f"{pokeball5_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball5_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball5_icon_name, (855, 245), pokeball5_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 5: {e}")
+
+    pokeball6_icon_name = request.args.get('pokeball6')
+    if pokeball6_icon_name:
+        effect_path = os.path.join("images", f"{pokeball6_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball6_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball6_icon_name, (875, 245), pokeball6_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 6: {e}")
 
     # Nome e level dos pokémons
     font_size = int(2.2 * font_scale)
@@ -164,7 +224,19 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
     draw.text((5, 208), f"{real_pokemon1_name.capitalize()}", fill=(255, 255, 255), font=font)
     draw.text((194, 211), f"{pokemon1_level}", fill=(255, 255, 255), font=font)
 
-    draw.text((868, 208), f"{real_pokemon2_name.capitalize()}", fill=(255, 255, 255), font=font)
+    # Escrever nome do Pokémon 2 da direita pra esquerda, letra por letra
+    x_start = 950
+    y = 208
+    name = real_pokemon2_name.capitalize()
+
+# Calcular largura total do texto
+    total_width = sum(font.getbbox(c)[2] for c in name)
+
+    x = x_start - total_width  # Alinhar o final do texto à posição x_start
+    for c in name:
+        draw.text((x, y), c, fill=(255, 255, 255), font=font)
+        x += font.getbbox(c)[2]
+
     draw.text((770, 211), f"{pokemon2_level}", fill=(255, 255, 255), font=font)
 
     output = BytesIO()
