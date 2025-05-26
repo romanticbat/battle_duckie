@@ -20,7 +20,7 @@ def get_ema_image():
         return 
 
 def get_background_image():
-    local_path = os.path.join("images", "background_battle.jpg")
+    local_path = os.path.join("images", "background_battle1.jpg")
     try:
         background = Image.open(local_path).convert("RGBA")
         return background
@@ -217,9 +217,14 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
 
     pokemon1_level = request.args.get('level1', '1')
     pokemon2_level = request.args.get('level2', '1')
+    battle_turn = request.args.get('turn', '1')
 
     real_pokemon1_name = get_real_pokemon_name(pokemon1)
     real_pokemon2_name = get_real_pokemon_name(pokemon2)
+
+    fontturn = ImageFont.truetype("pokemonfont.ttf", size=22)
+
+    draw.text((448, -1), f"Turn {battle_turn}", fill=(0, 0, 0), font=fontturn)
 
     draw.text((5, 208), f"{real_pokemon1_name.capitalize()}", fill=(255, 255, 255), font=font)
     draw.text((194, 211), f"{pokemon1_level}", fill=(255, 255, 255), font=font)
