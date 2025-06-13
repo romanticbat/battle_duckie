@@ -264,7 +264,7 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
         if os.path.exists(effect_path):
             try:
                 pokeball12_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball11_icon_name, (778, 245), pokeball12_icon_name)
+                battle_image.paste(pokeball12_icon_name, (778, 245), pokeball12_icon_name)
             except Exception as e:
                 print(f"Erro ao carregar pokéball do Pokémon 12: {e}")
 
