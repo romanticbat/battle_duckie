@@ -167,7 +167,107 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
                 battle_image.paste(pokeball2_icon_name, (84, 245), pokeball2_icon_name)
             except Exception as e:
                 print(f"Erro ao carregar pokéball do Pokémon 2: {e}")
-                
+
+    pokeball3_icon_name = request.args.get('pokeball3')
+    if pokeball3_icon_name:
+        effect_path = os.path.join("images", f"{pokeball3_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball3_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball3_icon_name, (103, 245), pokeball3_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 3: {e}")
+    
+    pokeball4_icon_name = request.args.get('pokeball4')
+    if pokeball4_icon_name:
+        effect_path = os.path.join("images", f"{pokeball4_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball4_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball4_icon_name, (123, 245), pokeball4_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 4: {e}")
+
+    pokeball5_icon_name = request.args.get('pokeball5')
+    if pokeball5_icon_name:
+        effect_path = os.path.join("images", f"{pokeball5_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball5_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball5_icon_name, (143, 245), pokeball5_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 5: {e}")
+
+    pokeball6_icon_name = request.args.get('pokeball6')
+    if pokeball6_icon_name:
+        effect_path = os.path.join("images", f"{pokeball6_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball6_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball6_icon_name, (163, 245), pokeball6_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 6: {e}")
+
+    pokeball7_icon_name = request.args.get('pokeball7')
+    if pokeball7_icon_name:
+        effect_path = os.path.join("images", f"{pokeball7_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball7_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball7_icon_name, (836, 245), pokeball7_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 7: {e}")
+
+    pokeball8_icon_name = request.args.get('pokeball8')
+    if pokeball8_icon_name:
+        effect_path = os.path.join("images", f"{pokeball8_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball8_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball8_icon_name, (855, 245), pokeball8_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 8: {e}")
+
+    pokeball9_icon_name = request.args.get('pokeball9')
+    if pokeball9_icon_name:
+        effect_path = os.path.join("images", f"{pokeball9_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball9_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball9_icon_name, (875, 245), pokeball9_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 9: {e}")
+            
+    pokeball10_icon_name = request.args.get('pokeball10')
+    if pokeball10_icon_name:
+        effect_path = os.path.join("images", f"{pokeball10_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball10_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball10_icon_name, (816, 245), pokeball10_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 10: {e}")
+
+    pokeball11_icon_name = request.args.get('pokeball11')
+    if pokeball11_icon_name:
+        effect_path = os.path.join("images", f"{pokeball11_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball11_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball11_icon_name, (797, 245), pokeball11_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 11: {e}")
+
+    pokeball12_icon_name = request.args.get('pokeball12')
+    if pokeball12_icon_name:
+        effect_path = os.path.join("images", f"{pokeball12_icon_name}.png")
+        if os.path.exists(effect_path):
+            try:
+                pokeball12_icon_name = Image.open(effect_path).convert("RGBA")
+                battle_image.paste(pokeball12_icon_name, (778, 245), pokeball12_icon_name)
+            except Exception as e:
+                print(f"Erro ao carregar pokéball do Pokémon 12: {e}")
+
     # Nome e level dos pokémons
     font_size = int(2.2 * font_scale)
     try:
