@@ -1,336 +1,226 @@
-from flask import Flask, send_file, request
+from flask import Flask, send_file, request    
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
-
 import os
 import requests
 import threading
 import time
-import requests
 
 app = Flask(__name__)
 
+# ==============================
+# Funções utilitárias
+# ==============================
+
 def get_ema_image():
-    local_path = os.path.join("images", "hpdesign_battle.png")
+    local_path = os.path.join("images", "hud_battle.png")
     try:
-        ema_image = Image.open(local_path).convert("RGBA")
-        return ema_image
+        return Image.open(local_path).convert("RGBA")
     except Exception as e:
-        print(f"Erro ao carregar a imagem local: {e}")
-        return 
+        print(f"Erro ao carregar hud_battle.png: {e}")
+        return None
 
 def get_background_image():
-    local_path = os.path.join("images", "background_battle1.jpg")
+    local_path = os.path.join("images", "backbattle.jpg")
     try:
-        background = Image.open(local_path).convert("RGBA")
-        return background
+        return Image.open(local_path).convert("RGBA")
     except Exception as e:
-        print(f"Erro ao carregar a imagem de fundo local: {e}")
+        print(f"Erro ao carregar backbattle.jpg: {e}")
         return Image.new('RGBA', (960, 480), (255, 255, 255, 255)) 
 
-def get_pokemon_sprite(pokemon_name, is_pokemon1=False, shiny=False, target_height=96):
-    """Busca o sprite do Pokémon."""
-    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name.lower()}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-
-        if is_pokemon1:
-            sprite_key = 'back_shiny' if shiny else 'back_default'
-        else:
-            sprite_key = 'front_shiny' if shiny else 'front_default'
-
-        if 'sprites' in data and sprite_key in data['sprites']:
-            sprite_url = data['sprites'][sprite_key]
-            if sprite_url:
-                sprite_response = requests.get(sprite_url)
-                if sprite_response.status_code == 200:
-                    sprite = Image.open(BytesIO(sprite_response.content)).convert("RGBA")
-                    sprite = resize_image(sprite, target_height=target_height)
-                    return sprite
-    return None
+def resize_image(image, target_height=96):
+    ratio = target_height / float(image.size[1])
+    width = int(float(image.size[0]) * ratio)
+    return image.resize((width, target_height), Image.BICUBIC)
 
 def get_real_pokemon_name(pokemon_identifier):
-    """Se for número, busca o nome real na API. Se for texto, usa direto."""
     if str(pokemon_identifier).isdigit():
         url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_identifier}"
         response = requests.get(url)
         if response.status_code == 200:
-            data = response.json()
-            return data['name']
-        else:
-            return str(pokemon_identifier)
-    else:
-        return str(pokemon_identifier)
+            return response.json()['name']
+    return str(pokemon_identifier)
 
-def resize_image(image, target_height=96):
-    """Redimensiona a imagem mantendo proporção."""
-    ratio = target_height / float(image.size[1])
-    width = int(float(image.size[0]) * ratio)
-    image = image.resize((width, target_height), Image.BICUBIC)
-    return image
+def get_pokemon_sprite(pokemon_name, is_pokemon1=False, shiny=False, target_height=96):
+    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name.lower()}"
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        return None
+
+    data = response.json()
+    sprite_key = 'back_shiny' if (is_pokemon1 and shiny) else \
+                 'back_default' if is_pokemon1 else \
+                 'front_shiny' if shiny else 'front_default'
+
+    sprite_url = data.get('sprites', {}).get(sprite_key)
+    if not sprite_url:
+        return None
+
+    sprite_response = requests.get(sprite_url)
+    if sprite_response.status_code == 200:
+        sprite = Image.open(BytesIO(sprite_response.content)).convert("RGBA")
+        return resize_image(sprite, target_height=target_height)
+    return None
+
+# ==============================
+# Funções para HP
+# ==============================
+
+def get_hp_image(color):
+    local_path = os.path.join("images", f"overlay_{color}.jpg")
+    try:
+        return Image.open(local_path).convert("RGBA")
+    except Exception as e:
+        print(f"Erro ao carregar {local_path}: {e}")
+        return None
+
+def choose_hp_color(hp_ratio):
+    if hp_ratio > 0.5:
+        return "green"
+    elif hp_ratio > 0.2:
+        return "orange"
+    else:
+        return "red"
+
+def draw_hp_bar(battle_image, position, hp_ratio):
+    color = choose_hp_color(hp_ratio)
+    hp_img = get_hp_image(color)
+    if not hp_img:
+        return
+
+    bar_width = int(hp_img.width * hp_ratio)
+    if bar_width <= 0:
+        return
+
+    cropped = hp_img.crop((0, 0, bar_width, hp_img.height))
+    battle_image.paste(cropped, position, cropped)
+
+# ==============================
+# Função principal de render
+# ==============================
 
 def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, font_scale=5.0):
     shiny1 = request.args.get('shiny1', 'false').lower() == 'true'
     shiny2 = request.args.get('shiny2', 'false').lower() == 'true'
 
-    # pega sprites
     sprite1 = get_pokemon_sprite(pokemon1, is_pokemon1=True, shiny=shiny1, target_height=sprite_height * 2)
     sprite2 = get_pokemon_sprite(pokemon2, is_pokemon1=False, shiny=shiny2, target_height=sprite_height * 2)
-
     if sprite1 is None or sprite2 is None:
         return None
 
     background = get_background_image()
-    background = resize_image(background, target_height=480)
     battle_image = Image.new('RGBA', background.size, (255, 255, 255, 0))
     battle_image.paste(background, (0, 0))
 
-    battle_image.paste(sprite1, (165, 245), sprite1)
-    battle_image.paste(sprite2, (530, 110), sprite2)
-
-    draw = ImageDraw.Draw(battle_image)
-
-    hp_bar_width = int(100 * hp_bar_scale)
-    hp_bar_height = int(9 * hp_bar_scale)
-
-    pokemon1_hp_bar_position = (70, 230)
-    pokemon2_hp_bar_position = (739, 230)
-
+    # HP ratios
     hp1 = int(request.args.get('hp1', 100))
     hp2 = int(request.args.get('hp2', 100))
-    hp1_ratio = float(hp1) / 100
-    hp2_ratio = float(hp2) / 100
+    hp1_ratio = max(0, min(1, hp1 / 100))
+    hp2_ratio = max(0, min(1, hp2 / 100))
 
-    hp_bar_color1 = (0, 255, 0) if hp1_ratio > 0.5 else (255, 165, 0) if hp1_ratio > 0.2 else (255, 0, 0)
-    hp_bar_color2 = (0, 255, 0) if hp2_ratio > 0.5 else (255, 165, 0) if hp2_ratio > 0.2 else (255, 0, 0)
+    # barras de HP primeiro (ficam "por baixo" da HUD)
+    draw_hp_bar(battle_image, (55, 38), hp2_ratio)
+    draw_hp_bar(battle_image, (190, 128), hp1_ratio)
 
-    draw.rectangle((pokemon1_hp_bar_position[0], pokemon1_hp_bar_position[1],
-                    pokemon1_hp_bar_position[0] + int(hp_bar_width * hp1_ratio), pokemon1_hp_bar_position[1] + hp_bar_height),
-                   fill=hp_bar_color1)
-    draw.rectangle((pokemon2_hp_bar_position[0] + int(hp_bar_width * (1 - hp2_ratio)), pokemon2_hp_bar_position[1],
-                    pokemon2_hp_bar_position[0] + hp_bar_width, pokemon2_hp_bar_position[1] + hp_bar_height),
-                   fill=hp_bar_color2)
-
+    # HUD por cima das barras
     ema_image = get_ema_image()
     if ema_image:
-        battle_image.paste(ema_image, (0, 15), ema_image)
+        battle_image.paste(ema_image, (0, 0), ema_image)
 
-    # Efeitos locais
-    battle_effect_pokemon2_name = request.args.get('battle_effect_pokemon2')
-    if battle_effect_pokemon2_name:
-        effect_path = os.path.join("images", f"{battle_effect_pokemon2_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                battle_effect_pokemon2 = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(battle_effect_pokemon2, (900, 198), battle_effect_pokemon2)
-            except Exception as e:
-                print(f"Erro ao carregar efeito do Pokémon 2: {e}")
+    # sprites
+    battle_image.paste(sprite1, (20, 70), sprite1)
+    battle_image.paste(sprite2, (140, 15), sprite2)
 
-    # Efeitos locais
-    battle_effect_pokemon1_name = request.args.get('battle_effect_pokemon1')
-    if battle_effect_pokemon1_name:
-        effect_path = os.path.join("images", f"{battle_effect_pokemon1_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                battle_effect_pokemon1 = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(battle_effect_pokemon1, (5, 198), battle_effect_pokemon1)
-            except Exception as e:
-                print(f"Erro ao carregar efeito do Pokémon 1: {e}")
-
-    battle_effect_battle_name = request.args.get('battle_effect_battle')
-    if battle_effect_battle_name:
-        effect_path = os.path.join("images", f"{battle_effect_battle_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                battle_effect_battle = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(battle_effect_battle, (65, 25), battle_effect_battle)
-            except Exception as e:
-                print(f"Erro ao carregar efeito da batalha: {e}")           
-
-    pokeball1_icon_name = request.args.get('pokeball1')
-    if pokeball1_icon_name:
-        effect_path = os.path.join("images", f"{pokeball1_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball1_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball1_icon_name, (65, 245), pokeball1_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 1: {e}")
-
-    pokeball2_icon_name = request.args.get('pokeball2')
-    if pokeball2_icon_name:
-        effect_path = os.path.join("images", f"{pokeball2_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball2_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball2_icon_name, (84, 245), pokeball2_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 2: {e}")
-
-    pokeball3_icon_name = request.args.get('pokeball3')
-    if pokeball3_icon_name:
-        effect_path = os.path.join("images", f"{pokeball3_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball3_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball3_icon_name, (103, 245), pokeball3_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 3: {e}")
-    
-    pokeball4_icon_name = request.args.get('pokeball4')
-    if pokeball4_icon_name:
-        effect_path = os.path.join("images", f"{pokeball4_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball4_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball4_icon_name, (123, 245), pokeball4_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 4: {e}")
-
-    pokeball5_icon_name = request.args.get('pokeball5')
-    if pokeball5_icon_name:
-        effect_path = os.path.join("images", f"{pokeball5_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball5_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball5_icon_name, (143, 245), pokeball5_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 5: {e}")
-
-    pokeball6_icon_name = request.args.get('pokeball6')
-    if pokeball6_icon_name:
-        effect_path = os.path.join("images", f"{pokeball6_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball6_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball6_icon_name, (163, 245), pokeball6_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 6: {e}")
-
-    pokeball7_icon_name = request.args.get('pokeball7')
-    if pokeball7_icon_name:
-        effect_path = os.path.join("images", f"{pokeball7_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball7_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball7_icon_name, (836, 245), pokeball7_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 7: {e}")
-
-    pokeball8_icon_name = request.args.get('pokeball8')
-    if pokeball8_icon_name:
-        effect_path = os.path.join("images", f"{pokeball8_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball8_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball8_icon_name, (855, 245), pokeball8_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 8: {e}")
-
-    pokeball9_icon_name = request.args.get('pokeball9')
-    if pokeball9_icon_name:
-        effect_path = os.path.join("images", f"{pokeball9_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball9_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball9_icon_name, (875, 245), pokeball9_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 9: {e}")
-            
-    pokeball10_icon_name = request.args.get('pokeball10')
-    if pokeball10_icon_name:
-        effect_path = os.path.join("images", f"{pokeball10_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball10_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball10_icon_name, (816, 245), pokeball10_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 10: {e}")
-
-    pokeball11_icon_name = request.args.get('pokeball11')
-    if pokeball11_icon_name:
-        effect_path = os.path.join("images", f"{pokeball11_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball11_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball11_icon_name, (797, 245), pokeball11_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 11: {e}")
-
-    pokeball12_icon_name = request.args.get('pokeball12')
-    if pokeball12_icon_name:
-        effect_path = os.path.join("images", f"{pokeball12_icon_name}.png")
-        if os.path.exists(effect_path):
-            try:
-                pokeball12_icon_name = Image.open(effect_path).convert("RGBA")
-                battle_image.paste(pokeball12_icon_name, (778, 245), pokeball12_icon_name)
-            except Exception as e:
-                print(f"Erro ao carregar pokéball do Pokémon 12: {e}")
-
-    # Nome e level dos pokémons
-    font_size = int(2.2 * font_scale)
-    try:
-        font = ImageFont.truetype("pokemonfont.ttf", font_size)
-    except IOError:
-        font = ImageFont.load_default()
-
-    pokemon1_level = request.args.get('level1', '1')
-    pokemon2_level = request.args.get('level2', '1')
-    battle_turn = request.args.get('turn', '1')
-
-    real_pokemon1_name = get_real_pokemon_name(pokemon1)
-    real_pokemon2_name = get_real_pokemon_name(pokemon2)
-
-    fontturn = ImageFont.truetype("pokemonfont.ttf", size=22)
-
-    draw.text((448, -1), f"Turn {battle_turn}", fill=(0, 0, 0), font=fontturn)
-
-    draw.text((5, 208), f"{real_pokemon1_name.capitalize()}", fill=(255, 255, 255), font=font)
-    draw.text((194, 211), f"{pokemon1_level}", fill=(255, 255, 255), font=font)
-
-    # Escrever nome do Pokémon 2 da direita pra esquerda, letra por letra
-    x_start = 950
-    y = 208
-    name = real_pokemon2_name.capitalize()
-
-# Calcular largura total do texto
-    total_width = sum(font.getbbox(c)[2] for c in name)
-
-    x = x_start - total_width  # Alinhar o final do texto à posição x_start
-    for c in name:
-        draw.text((x, y), c, fill=(255, 255, 255), font=font)
-        x += font.getbbox(c)[2]
-
-    draw.text((770, 211), f"{pokemon2_level}", fill=(255, 255, 255), font=font)
+    draw = ImageDraw.Draw(battle_image)
+    _apply_effects(draw, battle_image)
+    _draw_texts(draw, battle_image, pokemon1, pokemon2, font_scale)
 
     output = BytesIO()
     battle_image.save(output, format='PNG')
     output.seek(0)
     return output
 
+def _apply_effects(draw, battle_image):
+    def paste_if_exists(filename, position, size):
+        if not filename:
+            return
+        path = os.path.join("images", f"{filename}.png")
+        if os.path.exists(path):
+            try:
+                effect = Image.open(path).convert("RGBA")
+                effect = effect.resize((size, size), Image.BICUBIC)
+                battle_image.paste(effect, position, effect)
+            except Exception as e:
+                print(f"Erro ao carregar {filename}: {e}")
+
+    # efeitos
+    paste_if_exists(request.args.get('effect1'), (168, 132), 12)
+    paste_if_exists(request.args.get('effect2'), (106, 22), 12)
+    paste_if_exists(request.args.get('effect3'), (65, 25), 14)
+
+    # pokébolas
+    # posições fixas
+    positions_p1 = [(200, 60)]
+    positions_p2 = [(836, 245)]
+
+    # chamada direta para cada pokébola (sem loop)
+    paste_if_exists(request.args.get('pokeball1'), positions_p1[0], 20)  # jogador
+    paste_if_exists(request.args.get('pokeball2'), positions_p2[0], 20)  # inimigo
+
+def _draw_texts(draw, battle_image, pokemon1, pokemon2, font_scale):
+    try:
+        font = ImageFont.truetype("pokemon-ds-font.ttf", int(2.2 * font_scale))  # nomes e levels
+        font_turn = ImageFont.truetype("pokemon-ds-font.ttf", int(2.6 * font_scale))  # turno, maior
+    except IOError:
+        font = font_turn = ImageFont.load_default()
+
+    battle_turn = request.args.get('turn', '1')
+    draw.text((203, 133), f"{battle_turn}", fill=(40, 40, 40), font=font_turn)
+
+    real_pokemon1 = get_real_pokemon_name(pokemon1).capitalize()
+    real_pokemon2 = get_real_pokemon_name(pokemon2).capitalize()
+
+    level1 = request.args.get('level1', '1')
+    level2 = request.args.get('level2', '1')
+
+    # Pokémon 2 (inimigo - topo esquerdo)
+    draw.text((5, 23), real_pokemon2, fill=(0, 0, 0), font=font)
+    draw.text((93, 23), f"{level2}", fill=(0, 0, 0), font=font)
+
+    # Pokémon 1 (player - canto inferior)
+    bbox1 = draw.textbbox((0, 0), real_pokemon1, font=font)
+    text_width1 = bbox1[2] - bbox1[0]
+    x = 178 - text_width1 // 2
+    draw.text((x, 115), real_pokemon1, fill=(0, 0, 0), font=font)
+    draw.text((235, 115), f"{level1}", fill=(0, 0, 0), font=font)
+
+# ==============================
+# Rotas Flask
+# ==============================
+
 @app.route('/battle', methods=['GET'])
 def battle():
     pokemon1 = request.args.get('pokemon1')
     pokemon2 = request.args.get('pokemon2')
-    sprite_height = int(request.args.get('sprite_height', 96))
-    hp_bar_scale = float(request.args.get('hp_bar_scale', 1.5))
-    font_scale = float(request.args.get('font_scale', 8.0))
-
     if not pokemon1 or not pokemon2:
         return "Please provide both pokemon1 and pokemon2 parameters.", 400
+
+    sprite_height = int(request.args.get('sprite_height', 55))
+    hp_bar_scale = float(request.args.get('hp_bar_scale', 1.5))
+    font_scale = float(request.args.get('font_scale', 6.0))
 
     battle_image = create_battle_image(pokemon1, pokemon2, sprite_height, hp_bar_scale, font_scale)
     if battle_image is None:
         return "Failed to retrieve one or both Pokémon sprites.", 400
-
     return send_file(battle_image, mimetype='image/png')
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+# ==============================
+# Auto Ping
+# ==============================
 
 def auto_ping():
-    url = "https://hiru-battlepai.onrender.com/battle?pokemon1=4&pokemon2=1&hp1=80&hp2=65&level1=100&level2=100&shiny1=true&shiny2=true&battle_effect_pokemon1=&battle_effect_pokemon2=&battle_effect_battle="
+    url = "https://hiru-battlepai.onrender.com/battle?pokemon1=4&pokemon2=1&hp1=80&hp2=65&level1=100&level2=100&shiny1=true&shiny2=true"
     while True:
         try:
             response = requests.get(url)
@@ -338,7 +228,8 @@ def auto_ping():
             print(f"[{now}] Ping enviado! Status code: {response.status_code}")
         except Exception as e:
             print(f"Erro ao enviar ping: {e}")
-        time.sleep(300)  # 5 minutos
+        time.sleep(300)
 
-# Inicia a thread de auto-ping
-threading.Thread(target=auto_ping, daemon=True).start()
+if __name__ == '__main__':
+    threading.Thread(target=auto_ping, daemon=True).start()
+    app.run(host='0.0.0.0', port=5000, debug=True)
