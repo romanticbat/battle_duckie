@@ -204,7 +204,7 @@ def battle():
     pokemon1 = request.args.get('pokemon1')
     pokemon2 = request.args.get('pokemon2')
     if not pokemon1 or not pokemon2:
-        return "Please provide both pokemon1 and pokemon2 parameters.", 400
+        return "Please provide both pokemon1 and pokemon2 parametersh.", 400
 
     sprite_height = int(request.args.get('sprite_height', 55))
     hp_bar_scale = float(request.args.get('hp_bar_scale', 1.5))
