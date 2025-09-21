@@ -96,9 +96,9 @@ def draw_hp_bar(battle_image, position, hp_ratio):
     cropped = hp_img.crop((0, 0, bar_width, hp_img.height))
     battle_image.paste(cropped, position, cropped)
 
-# ==============================
+# =============================
 # Função principal de render
-# ==============================
+# =============================
 
 def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, font_scale=5.0):
     shiny1 = request.args.get('shiny1', 'false').lower() == 'true'
