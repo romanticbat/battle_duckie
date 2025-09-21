@@ -129,8 +129,8 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
         battle_image.paste(ema_image, (0, 0), ema_image)
 
     # sprites
-    battle_image.paste(sprite1, (20, 80), sprite1)
-    battle_image.paste(sprite2, (140, 15), sprite2)
+    battle_image.paste(sprite1, (20, 75), sprite1)
+    battle_image.paste(sprite2, (140, 10), sprite2)
 
     draw = ImageDraw.Draw(battle_image)
     _apply_effects(draw, battle_image)
