@@ -164,12 +164,12 @@ def _apply_effects(draw, battle_image):
 
     # pokébolas
     # posições fixas
-    positions_p1 = [(200, 60)]
-    positions_p2 = [(836, 245)]
+    positions_p2 = [(2, 50)]
+    positions_p1 = [(240, 152)]
 
     # chamada direta para cada pokébola (sem loop)
-    paste_if_exists(request.args.get('pokeball1'), positions_p1[0], 20)  # jogador
-    paste_if_exists(request.args.get('pokeball2'), positions_p2[0], 20)  # inimigo
+    paste_if_exists(request.args.get('ball1'), positions_p1[0], 15)  # jogador
+    paste_if_exists(request.args.get('ball2'), positions_p2[0], 15)  # inimigo
 
 def _draw_texts(draw, battle_image, pokemon1, pokemon2, font_scale):
     try:
