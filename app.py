@@ -129,7 +129,7 @@ def create_battle_image(pokemon1, pokemon2, sprite_height=96, hp_bar_scale=1.0, 
         battle_image.paste(ema_image, (0, 0), ema_image)
 
     # sprites
-    battle_image.paste(sprite1, (20, 70), sprite1)
+    battle_image.paste(sprite1, (25, 85), sprite1)
     battle_image.paste(sprite2, (140, 15), sprite2)
 
     draw = ImageDraw.Draw(battle_image)
@@ -158,6 +158,9 @@ def _apply_effects(draw, battle_image):
     paste_if_exists(request.args.get('effect1'), (168, 132), 12)
     paste_if_exists(request.args.get('effect2'), (106, 22), 12)
     paste_if_exists(request.args.get('effect3'), (65, 25), 14)
+
+    paste_if_exists(request.args.get('effect4'), (208, 116), 11)
+    paste_if_exists(request.args.get('effect5'), (65, 24), 11)
 
     # pokébolas
     # posições fixas
@@ -220,7 +223,7 @@ def battle():
 # ==============================
 
 def auto_ping():
-    url = "https://hiru-battlepai.onrender.com/battle?pokemon1=4&pokemon2=1&hp1=80&hp2=65&level1=100&level2=100&shiny1=true&shiny2=true"
+    url = "https://apiduckie.onrender.com/battle?pokemon1=4&pokemon2=1&hp1=80&hp2=65&level1=100&level2=100&shiny1=true&shiny2=true"
     while True:
         try:
             response = requests.get(url)
