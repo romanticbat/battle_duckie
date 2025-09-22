@@ -47,8 +47,14 @@ def get_real_pokemon_name(pokemon_identifier):
 
     # Tratamento especial para Megas
     if "-mega" in name:
-        base_name = name.replace("-mega", "").capitalize()
+        base_name = (
+            name.replace("-mega-x", "")
+                .replace("-mega-y", "")
+                .replace("-mega", "")
+                .capitalize()
+        )
         return f"M. {base_name}"
+    
     return name.capitalize()
 
 def get_pokemon_sprite(pokemon_name, is_pokemon1=False, shiny=False, target_height=96):
