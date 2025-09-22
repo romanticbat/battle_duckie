@@ -34,12 +34,22 @@ def resize_image(image, target_height=96):
     return image.resize((width, target_height), Image.BICUBIC)
 
 def get_real_pokemon_name(pokemon_identifier):
+    # Pega nome oficial pela PokéAPI
     if str(pokemon_identifier).isdigit():
         url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_identifier}"
         response = requests.get(url)
         if response.status_code == 200:
-            return response.json()['name']
-    return str(pokemon_identifier)
+            name = response.json()['name']
+        else:
+            name = str(pokemon_identifier)
+    else:
+        name = str(pokemon_identifier)
+
+    # Tratamento especial para Megas
+    if "-mega" in name:
+        base_name = name.replace("-mega", "").capitalize()
+        return f"M. {base_name}"
+    return name.capitalize()
 
 def get_pokemon_sprite(pokemon_name, is_pokemon1=False, shiny=False, target_height=96):
     url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name.lower()}"
@@ -49,11 +59,21 @@ def get_pokemon_sprite(pokemon_name, is_pokemon1=False, shiny=False, target_heig
         return None
 
     data = response.json()
-    sprite_key = 'back_shiny' if (is_pokemon1 and shiny) else \
-                 'back_default' if is_pokemon1 else \
-                 'front_shiny' if shiny else 'front_default'
 
+    # Seleção do sprite com fallback para Megas
+    if is_pokemon1:  # Pokémon do player → normalmente costas
+        sprite_key = 'back_shiny' if shiny else 'back_default'
+        fallback_key = 'front_shiny' if shiny else 'front_default'
+    else:  # Pokémon inimigo → frente
+        sprite_key = 'front_shiny' if shiny else 'front_default'
+        fallback_key = None
+     
     sprite_url = data.get('sprites', {}).get(sprite_key)
+
+    # Se não tiver sprite de costas → usa frente
+    if not sprite_url and fallback_key:
+        sprite_url = data.get('sprites', {}).get(fallback_key)
+
     if not sprite_url:
         return None
 
@@ -163,26 +183,24 @@ def _apply_effects(draw, battle_image):
     paste_if_exists(request.args.get('effect5'), (65, 24), 11)
 
     # pokébolas
-    # posições fixas
     positions_p2 = [(2, 50)]
     positions_p1 = [(240, 152)]
 
-    # chamada direta para cada pokébola (sem loop)
     paste_if_exists(request.args.get('ball1'), positions_p1[0], 15)  # jogador
     paste_if_exists(request.args.get('ball2'), positions_p2[0], 15)  # inimigo
 
 def _draw_texts(draw, battle_image, pokemon1, pokemon2, font_scale):
     try:
         font = ImageFont.truetype("pokemon-ds-font.ttf", int(2.2 * font_scale))  # nomes e levels
-        font_turn = ImageFont.truetype("pokemon-ds-font.ttf", int(2.6 * font_scale))  # turno, maior
+        font_turn = ImageFont.truetype("pokemon-ds-font.ttf", int(2.6 * font_scale))  # turno
     except IOError:
         font = font_turn = ImageFont.load_default()
 
     battle_turn = request.args.get('turn', '1')
     draw.text((203, 133), f"{battle_turn}", fill=(40, 40, 40), font=font_turn)
 
-    real_pokemon1 = get_real_pokemon_name(pokemon1).capitalize()
-    real_pokemon2 = get_real_pokemon_name(pokemon2).capitalize()
+    real_pokemon1 = get_real_pokemon_name(pokemon1)
+    real_pokemon2 = get_real_pokemon_name(pokemon2)
 
     level1 = request.args.get('level1', '1')
     level2 = request.args.get('level2', '1')
@@ -207,7 +225,7 @@ def battle():
     pokemon1 = request.args.get('pokemon1')
     pokemon2 = request.args.get('pokemon2')
     if not pokemon1 or not pokemon2:
-        return "Please provide both pokemon1 and pokemon2 parametersh.", 400
+        return "Please provide both pokemon1 and pokemon2 parameters.", 400
 
     sprite_height = int(request.args.get('sprite_height', 55))
     hp_bar_scale = float(request.args.get('hp_bar_scale', 1.5))
