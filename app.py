@@ -215,7 +215,6 @@ def _draw_texts(draw, battle_image, pokemon1, pokemon2, font_scale):
     draw.text((5, 23), real_pokemon2, fill=(0, 0, 0), font=font)
     draw.text((93, 23), f"{level2}", fill=(0, 0, 0), font=font)
 
-    # Pokémon 1 (player - canto inferior)
     bbox1 = draw.textbbox((0, 0), real_pokemon1, font=font)
     text_width1 = bbox1[2] - bbox1[0]
     x = 178 - text_width1 // 2
